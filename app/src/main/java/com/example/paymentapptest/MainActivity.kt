@@ -7,11 +7,16 @@ import android.widget.Button
 import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.lifecycleScope
 import com.stripe.android.PaymentConfiguration
+import com.stripe.android.model.Card
+import com.stripe.android.model.CardParams
 import com.stripe.android.model.ConfirmPaymentIntentParams
+import com.stripe.android.model.PaymentMethodCreateParams
 import com.stripe.android.payments.paymentlauncher.PaymentLauncher
 import com.stripe.android.payments.paymentlauncher.PaymentResult
 import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.view.CardInputListener
 import com.stripe.android.view.CardInputWidget
+import com.stripe.android.view.CardNumberEditText
 import kotlinx.coroutines.launch
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -25,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var card: CardInputWidget
     lateinit var paybtn: Button
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -37,19 +43,16 @@ class MainActivity : AppCompatActivity() {
             ::onPaymentResult
         )
 
-
-
-
         card = findViewById(R.id.cardInputWidget)
-        paybtn = findViewById(R.id.payButton)
 
+        paybtn = findViewById(R.id.payButton)
         card.postalCodeEnabled = false
 
 
         startCheckout()
     }
 
-    fun startCheckout() {
+    private fun startCheckout() {
 
         lifecycle.coroutineScope.launch {
 
@@ -64,7 +67,27 @@ class MainActivity : AppCompatActivity() {
         }
 
         paybtn.setOnClickListener{
+
             Log.d("TESTPAY", "renning")
+
+            val cardparms  = CardParams(
+                number = "4242424242424242",
+                cvc = "555",
+                expMonth = 1,
+                expYear = 25
+            )
+
+            var mycard:  PaymentMethodCreateParams? = PaymentMethodCreateParams.createCard(cardparms)
+
+            mycard?.let { params ->
+                val confirmParams = ConfirmPaymentIntentParams
+                    .createWithPaymentMethodCreateParams(params, paymentIntentClientSecret)
+                lifecycleScope.launch {
+                    paymentLauncher.confirm(confirmParams)
+                }
+            }
+
+            /*
             card.paymentMethodCreateParams?.let { params ->
                 val confirmParams = ConfirmPaymentIntentParams
                     .createWithPaymentMethodCreateParams(params, paymentIntentClientSecret)
@@ -72,6 +95,8 @@ class MainActivity : AppCompatActivity() {
                     paymentLauncher.confirm(confirmParams)
                 }
             }
+             */
+
         }
     }
     private fun onPaymentResult(paymentResult: PaymentResult) {
